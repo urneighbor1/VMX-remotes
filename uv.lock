@@ -332,6 +332,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pynetworktables"
+version = "2021.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/a9/fa585189c6cb45f59e90790ffa5737727075b65d516c8fa0c17c1661c16a/pynetworktables-2021.0.0.tar.gz", hash = "sha256:91167948e66c29d5c90f85f3e249403f4d2ebf11368b93f9b968ef315388c73c", size = 83875 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/1f/048457f674901be38a4ae377ca0166bf63497bf458fa500c84a202829623/pynetworktables-2021.0.0-py3-none-any.whl", hash = "sha256:54604b1993515c43890be058263f158c1d168c69bedd802f0de644964cf3840d", size = 65720 },
+]
+
+[[package]]
 name = "pyntcore"
 version = "2025.3.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -583,6 +592,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "numpy" },
     { name = "opencv-python" },
+    { name = "pynetworktables" },
     { name = "robotpy", extra = ["cscore"] },
 ]
 
@@ -590,6 +600,7 @@ dependencies = [
 requires-dist = [
     { name = "numpy", specifier = ">=2.2.1" },
     { name = "opencv-python", specifier = ">=4.11.0.86" },
+    { name = "pynetworktables", specifier = ">=2021.0.0" },
     { name = "robotpy", extras = ["cscore"], specifier = ">=2025.3.2.0" },
 ]
 
