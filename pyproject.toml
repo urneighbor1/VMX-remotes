@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["robotpy[cscore]>=2025.3.2.0"]
+dependencies = [
+    "numpy>=2.2.1", # cscoreに必要
+    "robotpy[cscore]>=2025.3.2.0",
+]
 
 
 [tool.ruff]
