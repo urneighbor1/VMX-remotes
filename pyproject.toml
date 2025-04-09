@@ -22,6 +22,8 @@ ignore = [ #
     "D10",
     "D400",
     "D415",
+    "TD002",
+    "TD003",
     "ERA",
     "PGH003",
 ] # https://docs.astral.sh/ruff/rules/
