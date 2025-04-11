@@ -7,7 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.2.1",                # cscoreに必要
     "opencv-python>=4.11.0.86",
-    "pynetworktables>=2021.0.0",
     "robotpy[cscore]>=2025.3.2.0",
 ]
 
