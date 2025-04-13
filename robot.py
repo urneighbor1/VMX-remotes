@@ -181,6 +181,19 @@ class ColorSquareDetector:
 
         return result_img
 
+    def draw_color_masks(self, img: cv2t.MatLike) -> dict[str, cv2t.MatLike]:
+        """各色のフィルター後の画像を生成"""
+        masks = {}
+        for color_name in self.COLOR_RANGES:
+            # 色のマスクを作成
+            mask = self._create_color_mask(img, color_name)
+            # マスクを3チャンネルに変換
+            mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+            # 元の画像とマスクを合成
+            result = cv2.bitwise_and(img, mask_3ch)
+            masks[color_name] = result
+        return masks
+
 
 WIDTH = 160
 HEIGHT = 120
@@ -225,6 +238,12 @@ def main() -> NoReturn:
         # 結果を描画して表示
         result_img = detector.draw_colored_squares(input_img, colored_squares)
         cv2.imshow("Colored Squares", result_img)
+
+        # 各色のフィルター後の画像を表示
+        color_masks = detector.draw_color_masks(input_img)
+        for color_name, mask_img in color_masks.items():
+            cv2.imshow(f"{color_name.capitalize()} Mask", mask_img)
+
         cv2.waitKey(1)
 
 
