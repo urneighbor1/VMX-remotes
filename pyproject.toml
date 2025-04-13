@@ -29,6 +29,12 @@ ignore = [ #
 ] # https://docs.astral.sh/ruff/rules/
 select = ["ALL"]
 
+# https://docs.astral.sh/ruff/settings/#lint_allowed-confusables
+allowed-confusables = [ #
+    "（", # 全幅括弧
+    "）", # 全幅括弧
+]
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
