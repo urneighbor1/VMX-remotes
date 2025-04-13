@@ -1,6 +1,7 @@
 import json
 import logging
 import math
+import sys
 from pathlib import Path
 from typing import ClassVar, NoReturn
 
@@ -396,7 +397,10 @@ def main() -> NoReturn:
         for color_name, mask_img in color_masks.items():
             cv2.imshow(f"{color_name.capitalize()} Mask", mask_img)
 
-        cv2.waitKey(1)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    sys.exit(0)
 
 
 if __name__ == "__main__":
