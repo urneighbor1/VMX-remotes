@@ -4,36 +4,10 @@ from typing import ClassVar, NoReturn
 
 import cv2
 import cv2.typing as cv2t
-import ntcore
 import numpy as np
-from cscore import CameraServer, CvSink, HttpCamera, VideoMode
+from cscore import CameraServer, CvSink
 
-NetworkTables = ntcore.NetworkTableInstance.getDefault()
-SERVERS = ["127.0.0.1", "10.12.34.2"]
-PORT = NetworkTables.kDefaultPort3
-
-
-def find_server(server_ips: list[str]) -> str:
-    import socket
-
-    """接続できるNetworkTablesサーバーを探す"""
-    for server in server_ips:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1.0)
-        try:
-            s.connect((server, PORT))
-            s.close()
-        except OSError as e:
-            print(e)
-        else:
-            return server
-        finally:
-            s.close()
-    msg = "SERVERSのどれにも接続できませんでした"
-    raise RuntimeError(msg)
-
-
-SERVER_IP = find_server(SERVERS)
+from init import NetworkTables, get_server_ip, init_camera_sink, init_network_tables
 
 
 class ColorSquareDetector:
@@ -172,7 +146,9 @@ class ColorSquareDetector:
         return result
 
     def draw_colored_squares(
-        self, img: cv2t.MatLike, colored_squares: dict[str, list[tuple[np.ndarray, float]]]
+        self,
+        img: cv2t.MatLike,
+        colored_squares: dict[str, list[tuple[np.ndarray, float]]],
     ) -> cv2t.MatLike:
         """検出した色付き四角形を描画"""
         result_img = img.copy()
@@ -206,21 +182,23 @@ class ColorSquareDetector:
         return result_img
 
 
-def main() -> NoReturn:
+WIDTH = 160
+HEIGHT = 120
+FPS = 5
+
+
+def init() -> CvSink:
     logging.basicConfig(level=logging.DEBUG)
     CameraServer.enableLogging()
 
-    NetworkTables.startClient3("Py Image Processor")
-    NetworkTables.setServer(SERVER_IP)
-    NetworkTables.startDSClient()
+    server_ip = get_server_ip()
 
-    WIDTH = 160
-    HEIGHT = 120
+    init_network_tables(server_ip)
+    return init_camera_sink(server_ip, WIDTH, HEIGHT, FPS)
 
-    camera = HttpCamera("Camera", f"http://{SERVER_IP}:1181/?action=stream")
-    camera.setVideoMode(VideoMode.PixelFormat(VideoMode.PixelFormat.kMJPEG), WIDTH, HEIGHT, 5)
 
-    sink = CameraServer.getVideo(camera)
+def main() -> NoReturn:
+    sink = init()
 
     detector = ColorSquareDetector(HEIGHT, WIDTH)
     input_img = detector.get_input_buffer()
