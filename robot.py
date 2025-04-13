@@ -1,11 +1,12 @@
 import logging
 import math
-from typing import ClassVar, NoReturn
+from typing import ClassVar, NoReturn, TypedDict
 
 import cv2
 import cv2.typing as cv2t
 import numpy as np
 from cscore import CameraServer, CvSink
+from ntcore import DoubleSubscriber, NetworkTable
 
 from init import NetworkTables, get_server_ip, init_camera_sink, init_network_tables
 
@@ -46,6 +47,65 @@ class ColorSquareDetector:
         self.max_area = image_height * image_width
         self.epsilon_factor = 0.02  # 輪郭近似の精度
         self.max_cosine_limit = 0.3  # 角度の最大コサイン値
+
+        # 色の範囲を動的に変更するための変数
+        self._color_ranges = {
+            "red": {
+                "range1": {
+                    "lower": np.array([0, 100, 100], dtype=np.uint8),
+                    "upper": np.array([10, 255, 255], dtype=np.uint8),
+                },
+                "range2": {
+                    "lower": np.array([160, 100, 100], dtype=np.uint8),
+                    "upper": np.array([180, 255, 255], dtype=np.uint8),
+                },
+            },
+            "blue": {
+                "range1": {
+                    "lower": np.array([100, 100, 100], dtype=np.uint8),
+                    "upper": np.array([130, 255, 255], dtype=np.uint8),
+                },
+            },
+            "yellow": {
+                "range1": {
+                    "lower": np.array([20, 100, 100], dtype=np.uint8),
+                    "upper": np.array([30, 255, 255], dtype=np.uint8),
+                },
+            },
+        }
+
+    def update_parameters(self, min_area: float, max_area: float) -> None:
+        """NetworkTablesから取得したパラメータを更新"""
+        self.min_area = min_area
+        self.max_area = max_area
+
+    def update_color_range(
+        self,
+        color_name: str,
+        range_index: int,
+        h_min: int,
+        h_max: int,
+        s_min: int,
+        s_max: int,
+        v_min: int,
+        v_max: int,
+    ) -> None:
+        """指定した色のHSV範囲を更新"""
+        if color_name not in self._color_ranges:
+            return
+
+        range_key = f"range{range_index}"
+        if range_key not in self._color_ranges[color_name]:
+            return
+
+        self._color_ranges[color_name][range_key]["lower"] = np.array(
+            [h_min, s_min, v_min],
+            dtype=np.uint8,
+        )
+        self._color_ranges[color_name][range_key]["upper"] = np.array(
+            [h_max, s_max, v_max],
+            dtype=np.uint8,
+        )
 
     def get_input_buffer(self) -> cv2.Mat:
         """入力画像用のバッファを取得"""
@@ -96,14 +156,17 @@ class ColorSquareDetector:
 
         # 赤色の場合は2つの範囲を結合
         if color_name == "red":
-            lower1, upper1 = self.COLOR_RANGES["red"][0], self.COLOR_RANGES["red"][1]
-            lower2, upper2 = self.COLOR_RANGES["red"][2], self.COLOR_RANGES["red"][3]
+            lower1 = self._color_ranges["red"]["range1"]["lower"]
+            upper1 = self._color_ranges["red"]["range1"]["upper"]
+            lower2 = self._color_ranges["red"]["range2"]["lower"]
+            upper2 = self._color_ranges["red"]["range2"]["upper"]
 
             mask1 = cv2.inRange(self._hsv_img, lower1, upper1)
             mask2 = cv2.inRange(self._hsv_img, lower2, upper2)
             mask = cv2.bitwise_or(mask1, mask2)
         else:
-            lower, upper = self.COLOR_RANGES[color_name]
+            lower = self._color_ranges[color_name]["range1"]["lower"]
+            upper = self._color_ranges[color_name]["range1"]["upper"]
             mask = cv2.inRange(self._hsv_img, lower, upper)
 
         # ノイズ除去と穴埋め
@@ -210,6 +273,16 @@ def init() -> CvSink:
     return init_camera_sink(server_ip, WIDTH, HEIGHT, FPS)
 
 
+def get_double_subscriber(
+    table: NetworkTable,
+    name: str,
+    default: float,
+) -> DoubleSubscriber:
+    """初期値を設定しつつsubscriberを作る"""
+    table.setDefaultNumber(name, default)
+    return table.getDoubleTopic(name).subscribe(default)
+
+
 def main() -> NoReturn:
     sink = init()
 
@@ -218,14 +291,117 @@ def main() -> NoReturn:
 
     # NetworkTablesのトピックを設定
     table = NetworkTables.getTable("ColorSquares")
-    red_squares_topic = table.getIntegerTopic("Red squares").publish()
-    blue_squares_topic = table.getIntegerTopic("Blue squares").publish()
-    yellow_squares_topic = table.getIntegerTopic("Yellow squares").publish()
+    red_squares_topic = table.getDoubleTopic("Red squares").publish()
+    blue_squares_topic = table.getDoubleTopic("Blue squares").publish()
+    yellow_squares_topic = table.getDoubleTopic("Yellow squares").publish()
+
+    # 設定
+    config_table = table.getSubTable("Config")
+    min_area = get_double_subscriber(config_table, "Minimum area", 100.0)
+    max_area = get_double_subscriber(config_table, "Maximum area", HEIGHT * WIDTH)
+
+    # 色の範囲設定
+    color_ranges_table = config_table.getSubTable("ColorRanges")
+
+    # 色の範囲パラメータを格納する辞書
+    color_params: dict[str, list[dict[str, DoubleSubscriber]]] = {}
+
+    class ColorRange(TypedDict):
+        ranges: int
+        defaults: list[dict[str, float]]
+
+    # 色の定義
+    colors: dict[str, ColorRange] = {
+        "Red": {
+            "ranges": 2,
+            "defaults": [
+                {
+                    "H_min": 0.0,
+                    "H_max": 10.0,
+                    "S_min": 100.0,
+                    "S_max": 255.0,
+                    "V_min": 100.0,
+                    "V_max": 255.0,
+                },
+                {
+                    "H_min": 160.0,
+                    "H_max": 180.0,
+                    "S_min": 100.0,
+                    "S_max": 255.0,
+                    "V_min": 100.0,
+                    "V_max": 255.0,
+                },
+            ],
+        },
+        "Blue": {
+            "ranges": 1,
+            "defaults": [
+                {
+                    "H_min": 100.0,
+                    "H_max": 130.0,
+                    "S_min": 100.0,
+                    "S_max": 255.0,
+                    "V_min": 100.0,
+                    "V_max": 255.0,
+                },
+            ],
+        },
+        "Yellow": {
+            "ranges": 1,
+            "defaults": [
+                {
+                    "H_min": 20.0,
+                    "H_max": 30.0,
+                    "S_min": 100.0,
+                    "S_max": 255.0,
+                    "V_min": 100.0,
+                    "V_max": 255.0,
+                },
+            ],
+        },
+    }
+
+    # 各色のパラメータをサブスクライブ
+    for color_name, color_info in colors.items():
+        color_params[color_name] = []
+        for range_idx in range(1, color_info["ranges"] + 1):
+            range_params: dict[str, DoubleSubscriber] = {}
+            range_table = color_ranges_table.getSubTable(color_name).getSubTable(
+                f"Range{range_idx}",
+            )
+            defaults = color_info["defaults"][range_idx - 1]
+
+            for param_name, default_value in defaults.items():
+                range_params[param_name] = get_double_subscriber(
+                    range_table,
+                    param_name,
+                    default_value,
+                )
+
+            color_params[color_name].append(range_params)
 
     while True:
         grabbed_time, input_img = CvSink.grabFrame(sink, input_img)
         if grabbed_time == 0:
             continue
+
+        # NetworkTablesから取得したパラメータを更新
+        detector.update_parameters(min_area.get(), max_area.get())
+
+        # 色の範囲を更新
+        for color_name, ranges in color_params.items():
+            color_name_lower = color_name.lower()
+            for range_idx, params in enumerate(ranges, 1):
+                detector.update_color_range(
+                    color_name_lower,
+                    range_idx,
+                    int(params["H_min"].get()),
+                    int(params["H_max"].get()),
+                    int(params["S_min"].get()),
+                    int(params["S_max"].get()),
+                    int(params["V_min"].get()),
+                    int(params["V_max"].get()),
+                )
 
         # 色付き四角形を検出
         colored_squares = detector.detect_colored_squares(input_img)
