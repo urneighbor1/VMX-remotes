@@ -1,5 +1,7 @@
+import json
 import logging
 import math
+from pathlib import Path
 from typing import ClassVar, NoReturn
 
 import cv2
@@ -9,6 +11,9 @@ from cscore import CameraServer, CvSink
 from ntcore import DoubleSubscriber, NetworkTable
 
 from init import NetworkTables, get_server_ip, init_camera_sink, init_network_tables
+
+# 設定ファイルのパス
+PREFERENCES_FILE = "color_squares_preferences.json"
 
 
 class ColorSquareDetector:
@@ -45,7 +50,7 @@ class ColorSquareDetector:
         # 四角形検出のパラメータ
         self.min_area = 100
         self.max_area = image_height * image_width
-        self.epsilon_factor = 0.02  # 輪郭近似の精度
+        self.epsilon_factor = 0.04  # 輪郭近似の精度
         self.max_cosine_limit = 0.3  # 角度の最大コサイン値
 
         # 色の範囲を動的に変更するための変数
@@ -253,6 +258,21 @@ def get_double_subscriber(
     return table.getDoubleTopic(name).subscribe(default)
 
 
+def load_preferences() -> dict:
+    """保存された設定を読み込む"""
+    file_path = Path(PREFERENCES_FILE)
+    if not file_path.exists():
+        return {}
+
+    try:
+        with file_path.open() as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        logger = logging.getLogger(__name__)
+        logger.exception("設定ファイルの読み込みに失敗しました", extra={"error": e})
+        return {}
+
+
 def main() -> NoReturn:
     sink = init()
 
@@ -267,8 +287,21 @@ def main() -> NoReturn:
 
     # 設定
     config_table = table.getSubTable("Config")
-    min_area = get_double_subscriber(config_table, "Minimum area", 100.0)
-    max_area = get_double_subscriber(config_table, "Maximum area", HEIGHT * WIDTH)
+
+    # 保存された設定を読み込む
+    preferences = load_preferences()
+
+    # デフォルト値
+    default_min_area = 100.0
+    default_max_area = HEIGHT * WIDTH
+
+    # 保存された設定があれば使用
+    if preferences:
+        default_min_area = preferences.get("min_area", default_min_area)
+        default_max_area = preferences.get("max_area", default_max_area)
+
+    min_area = get_double_subscriber(config_table, "Minimum area", default_min_area)
+    max_area = get_double_subscriber(config_table, "Maximum area", default_max_area)
 
     # 色の範囲設定
     color_ranges_table = config_table.getSubTable("ColorRanges")
@@ -303,6 +336,13 @@ def main() -> NoReturn:
             "V_max": 255.0,
         },
     }
+
+    # 保存された色の設定があれば使用
+    if preferences and "color_ranges" in preferences:
+        saved_colors = preferences["color_ranges"]
+        for color_name, color_ranges in colors.items():
+            if color_name in saved_colors:
+                color_ranges.update(saved_colors[color_name])
 
     # 各色のパラメータをサブスクライブ
     for color_name, color_info in colors.items():
