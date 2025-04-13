@@ -113,7 +113,7 @@ class ColorSquareDetector:
 
         # 四角形の条件をチェック
         if (
-            approx.shape[0] == 4  # 頂点が4つ
+            approx.shape[0] == 4  # 頂点が4つ  # noqa: PLR2004
             and self.min_area < area < self.max_area  # 面積が適切
             and cv2.isContourConvex(approx)  # 凸多角形
         ):
