@@ -29,15 +29,26 @@ class ColorDetector:
     def create_color_mask(self, img: ColorImage, color_range: ColorRange) -> ImageMask:
         cv2.cvtColor(img, cv2.COLOR_BGR2HSV, self._hsv_img)
         """指定した色のマスクを作成"""
-        lower = np.array(
-            [color_range["H_min"], color_range["S_min"], color_range["V_min"]],
-            dtype=np.uint8,
-        )
-        upper = np.array(
-            [color_range["H_max"], color_range["S_max"], color_range["V_max"]],
-            dtype=np.uint8,
-        )
-        mask = cv2.inRange(self._hsv_img, lower, upper)
+        h_min, h_max = color_range["H_min"], color_range["H_max"]
+        s_min, s_max = color_range["S_min"], color_range["S_max"]
+        v_min, v_max = color_range["V_min"], color_range["V_max"]
+
+        # H_minがH_maxより大きい場合（色相が循環する場合）
+        if h_min > h_max:
+            # 2つの範囲に分けてマスクを作成
+            lower1 = np.array([h_min, s_min, v_min], dtype=np.uint8)
+            upper1 = np.array([180, s_max, v_max], dtype=np.uint8)
+            lower2 = np.array([0, s_min, v_min], dtype=np.uint8)
+            upper2 = np.array([h_max, s_max, v_max], dtype=np.uint8)
+
+            mask1 = cv2.inRange(self._hsv_img, lower1, upper1)
+            mask2 = cv2.inRange(self._hsv_img, lower2, upper2)
+            mask = cv2.bitwise_or(mask1, mask2)
+        else:
+            # 通常の範囲指定
+            lower = np.array([h_min, s_min, v_min], dtype=np.uint8)
+            upper = np.array([h_max, s_max, v_max], dtype=np.uint8)
+            mask = cv2.inRange(self._hsv_img, lower, upper)
 
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, self._kernel)
         return cv2.morphologyEx(mask, cv2.MORPH_CLOSE, self._kernel)  # type: ignore
