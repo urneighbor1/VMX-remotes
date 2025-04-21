@@ -5,12 +5,12 @@
     "max_cosine_limit": 0.3,
     "color_ranges": {
         "Red": {
-            "H_min": 0.0,
-            "H_max": 10.0,
-            "S_min": 100.0,
-            "S_max": 255.0,
-            "V_min": 100.0,
-            "V_max": 255.0
+            "H_min": 178,
+            "S_min": 204,
+            "V_min": 73,
+            "H_max": 4,
+            "S_max": 255,
+            "V_max": 255
         },
         "Blue": {
             "H_min": 70.0,
