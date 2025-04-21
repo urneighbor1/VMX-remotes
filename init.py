@@ -37,12 +37,10 @@ def get_server_ip() -> str:
     return find_network_tables_server(SERVERS)
 
 
-def init_network_tables(server_ip: str) -> ntcore.NetworkTableInstance:
+def init_network_tables(server_ip: str) -> None:
     NetworkTables.startClient3("Py Image Processor")
     NetworkTables.setServer(server_ip)
     NetworkTables.startDSClient()
-
-    return NetworkTables
 
 
 def init_camera_sink(server_ip: str, width: int, height: int, fps: int) -> CvSink:
