@@ -1,5 +1,7 @@
+import datetime
 import logging
 import sys
+from pathlib import Path
 from typing import NoReturn
 
 import cv2
@@ -7,7 +9,7 @@ from cscore import CameraServer, CvSink
 from ntcore import DoubleSubscriber, NetworkTable
 
 from color_range import COLOR_RANGE_PARAMS, ColorRangeParam
-from color_square_detector import ColorSquareDetector, ImageMask
+from color_square_detector import ColorImage, ColorSquareDetector, ImageMask
 from config import COLORS, ColorName, load_preferences
 from init import NetworkTables, get_server_ip, init_camera_sink, init_network_tables
 
@@ -15,8 +17,14 @@ WIDTH = 160
 HEIGHT = 120
 FPS = 5
 
+# 画像を保存するディレクトリ
+SAVED_IMAGES_DIR = Path("saved_images")
+
 
 def init() -> CvSink:
+    # 画像を保存するディレクトリが存在しない場合は作成
+    SAVED_IMAGES_DIR.mkdir(exist_ok=True)
+
     logging.basicConfig(level=logging.DEBUG)
     CameraServer.enableLogging()
 
@@ -34,6 +42,16 @@ def get_double_subscriber(
     """初期値を設定しつつsubscriberを作る"""
     table.setDefaultNumber(name, default)
     return table.getDoubleTopic(name).subscribe(default)
+
+
+def save_image(image: ColorImage) -> None:
+    """画像を保存する"""
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}.jpg"
+    filepath = SAVED_IMAGES_DIR.joinpath(filename)
+    cv2.imwrite(filepath.as_posix(), image)
+    logger = logging.getLogger(__name__)
+    logger.info(f"画像を保存しました: {filepath}")  # noqa: G004
 
 
 def main() -> NoReturn:
@@ -78,7 +96,6 @@ def main() -> NoReturn:
         detector.config.min_area = min_area.get()
         detector.config.max_area = max_area.get()
 
-        detector.config.color_ranges.items()
         # 色の範囲を更新
         for color_name, color_params in params.items():
             detector.config.color_ranges[color_name] = {
@@ -101,8 +118,12 @@ def main() -> NoReturn:
         for color_name, mask_img in masked_imgs.items():
             cv2.imshow(f"{color_name.capitalize()} Mask", mask_img)
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
             break
+        if key == ord("s"):
+            # 元の画像を保存
+            save_image(input_img)
 
     sys.exit(0)
 
