@@ -9,5 +9,7 @@
 
         ".venv": true,
         "__pycache__":true
-    }
+    },
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "standard"
 }
