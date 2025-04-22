@@ -101,9 +101,9 @@ class Visualizer:
 
     @staticmethod
     def draw_colored_squares(
-        img: cv2t.MatLike,
+        img: ColorImage,
         colored_squares: dict[ColorName, list[tuple[Rectangle, float]]],
-    ) -> cv2t.MatLike:
+    ) -> ColorImage:
         """検出した色付き四角形を描画"""
         result_img = img.copy()
 
@@ -137,7 +137,7 @@ class Visualizer:
 
     @staticmethod
     def draw_color_masks(
-        img: cv2t.MatLike,
+        img: ColorImage,
         masks: dict[ColorName, ImageMask],
     ) -> dict[ColorName, ColorImage]:
         """各色のフィルター後の画像を生成"""
