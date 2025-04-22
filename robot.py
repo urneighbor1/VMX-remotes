@@ -9,7 +9,7 @@ from cscore import CameraServer, CvSink
 from ntcore import DoubleSubscriber, NetworkTable
 
 from color_range import COLOR_RANGE_PARAMS, ColorRangeParam
-from color_square_detector import ColorImage, ColorSquareDetector, ImageMask
+from color_square_detector import ColorImage, ColorSquareDetector, ImageMask, Rectangle
 from config import COLORS, ColorName, load_preferences
 from init import NetworkTables, get_server_ip, init_camera_sink, init_network_tables
 
@@ -66,6 +66,18 @@ def main() -> NoReturn:
     config_table = table.getSubTable("Config")
     color_ranges_table = config_table.getSubTable("ColorRanges")
 
+    # 入力エントリー
+    process_camera_sub = table.getBooleanTopic("processCamera").subscribe(defaultValue=False)
+    table.setDefaultBoolean("processCamera", defaultValue=False)
+
+    # 出力エントリー
+    detected_color_pub = table.getStringTopic("DetectedColor").publish()
+    detected_area_x_pub = table.getDoubleTopic("DetectedAreaX").publish()
+    detected_area_y_pub = table.getDoubleTopic("DetectedAreaY").publish()
+    detected_color_pub.set("NONE")
+    detected_area_x_pub.set(-1.0)
+    detected_area_y_pub.set(-1.0)
+
     # 面積の範囲を取得
     min_area = get_double_subscriber(config_table, "Minimum area", detector.config.min_area)
     max_area = get_double_subscriber(config_table, "Maximum area", detector.config.max_area)
@@ -88,6 +100,13 @@ def main() -> NoReturn:
     }
 
     while True:
+        # --- processCameraフラグを確認 ---
+        if not process_camera_sub.get():
+            # Falseなら待機 (出力エントリーは最後の値のまま)
+            cv2.waitKey(100)  # CPU負荷軽減のため少し待機
+            continue
+        # --- ここまで ---
+
         grabbed_time, _ = sink.grabFrame(input_img)
         if grabbed_time == 0:
             continue
@@ -104,6 +123,38 @@ def main() -> NoReturn:
 
         # 色付き四角形を検出
         colored_squares = detector.detect_colored_squares(input_img)
+
+        # --- 結果の選択とNetworkTableへの書き込み ---
+        # 全ての色の四角形を一つのリストにまとめる
+        all_squares: list[tuple[ColorName, Rectangle, float]] = [
+            (color, rect, area)
+            for color, squares_with_area in colored_squares.items()
+            for rect, area in squares_with_area  # area は使用しないがタプルを展開
+        ]
+
+        if not all_squares:
+            # 検出されなかった場合
+            detected_color_pub.set("NONE")
+            detected_area_x_pub.set(-1.0)
+            detected_area_y_pub.set(-1.0)
+        else:
+            # 最も左にある四角形を選択
+            def get_center_x(item: tuple[ColorName, Rectangle, float]) -> float:
+                rect = item[1]
+                # 以下の行は、正しいコードではない
+                return rect[0] + rect[2] / 2.0
+
+            best_item = min(all_squares, key=get_center_x)
+            best_color, best_rect, _ = best_item  # areaは無視
+
+            # 以下の2行は、正しいコードではない
+            center_x = best_rect[0] + best_rect[2] / 2.0
+            center_y = best_rect[1] + best_rect[3] / 2.0
+
+            detected_color_pub.set(best_color)
+            detected_area_x_pub.set(center_x)
+            detected_area_y_pub.set(center_y)
+        # --- ここまで ---
 
         # 結果を描画して表示
         result_img = detector.visualizer.draw_colored_squares(input_img, colored_squares)
