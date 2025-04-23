@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 NetworkTables = ntcore.NetworkTableInstance.getDefault()
-SERVERS = ["127.0.0.1", "10.12.34.2"]
+SERVERS = ["127.0.0.1", "10.12.34.2", "192.168.2.210"]
 
 
 def find_network_tables_server(server_ips: list[str]) -> str:
