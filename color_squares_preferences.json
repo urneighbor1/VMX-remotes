@@ -5,10 +5,10 @@
     "max_cosine_limit": 0.3,
     "color_ranges": {
         "Red": {
-            "H_min": 178,
-            "S_min": 204,
-            "V_min": 73,
-            "H_max": 4,
+            "H_min": 170,
+            "S_min": 112,
+            "V_min": 25,
+            "H_max": 15,
             "S_max": 255,
             "V_max": 255
         },
@@ -24,7 +24,7 @@
             "H_min": 21,
             "S_min": 170,
             "V_min": 99,
-            "H_max": 26,
+            "H_max": 35,
             "S_max": 255,
             "V_max": 255
         }
