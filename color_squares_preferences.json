@@ -1,5 +1,5 @@
 {
-    "min_area": 300.0,
+    "min_area": 200.0,
     "max_area": 3000.0,
     "epsilon_factor": 0.04,
     "max_cosine_limit": 0.3,
