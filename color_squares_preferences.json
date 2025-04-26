@@ -2,7 +2,7 @@
     "min_area": 200.0,
     "max_area": 3000.0,
     "epsilon_factor": 0.04,
-    "max_cosine_limit": 0.3,
+    "max_cosine_limit": 0.8,
     "color_ranges": {
         "Red": {
             "H_min": 170,
