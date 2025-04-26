@@ -19,8 +19,8 @@ class ColorConfig(BaseModel):
 
     min_area: float = Field(gt=0)
     max_area: float = Field(gt=0)
-    epsilon_factor: float = Field(gt=0, lt=1)  # 輪郭近似の精度
-    max_cosine_limit: float = Field(gt=0, lt=1)  # 角度の最大コサイン値
+    epsilon_factor: float = Field(gt=0, le=1)  # 輪郭近似の精度
+    max_cosine_limit: float = Field(gt=0, le=1)  # 角度の最大コサイン値
     color_ranges: dict[ColorName, ColorRange]
 
 
