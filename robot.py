@@ -248,6 +248,12 @@ def process_single_frame(
     nt_entries: NetworkTablesDict,
 ) -> bool:
     """1フレームの処理を行う"""
+    # process_cameraが再度有効になった時に、"準備中"状態にする
+    # subscriberに出力のキャッシュ機能があるが、ロボット側で上書きされた時に、
+    # 変化が起こるまでそれを上書き出来ない
+    process_camera_queue = nt_entries["subscribers"]["process_camera"].readQueue()
+    if process_camera_queue and process_camera_queue[-1].value:
+        nt_entries["publishers"]["detected_color"].set("PREPARING")
     # processCameraフラグを確認
     if not nt_entries["subscribers"]["process_camera"].get():
         # Falseなら待機
