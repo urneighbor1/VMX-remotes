@@ -77,21 +77,21 @@ class SquareDetector:
         area = abs(cv2.contourArea(approx))
 
         if (
-            approx.shape[0] == 4  # noqa: PLR2004
+            approx.shape[0] <= 6  # noqa: PLR2004
             and self.config.min_area < area < self.config.max_area
-            and cv2.isContourConvex(approx)
+            # and cv2.isContourConvex(approx)
         ):
-            max_cosine = 0
-            for j in range(2, 5):
-                cosine = abs(self._angle(approx[j % 4], approx[j - 2], approx[j - 1]))
-                max_cosine = max(max_cosine, cosine)
+            # max_cosine = 0
+            # for j in range(2, approx.shape[0] + 1):
+            #     cosine = abs(self._angle(approx[j % approx.shape[0]], approx[j - 2], approx[j - 1]))
+            #     max_cosine = max(max_cosine, cosine)
 
-            return max_cosine < self.config.max_cosine_limit
+            return True
 
         return False
 
 
-type Rectangle = np.ndarray[tuple[Literal[4], Literal[2]], np.dtype[np.int32]]
+type Rectangle = np.ndarray[tuple[int, Literal[2]], np.dtype[np.int32]]
 
 
 class Visualizer:
@@ -176,7 +176,7 @@ class ColorSquareDetector:
                         arc_len * self.config.epsilon_factor,
                         closed=True,
                     )
-                    rectangle: Rectangle = approx.reshape(4, 2)  # type: ignore
+                    rectangle: Rectangle = approx.reshape(-1, 2)  # type: ignore
                     area = abs(cv2.contourArea(approx))
                     squares.append((rectangle, area))
 
