@@ -54,14 +54,15 @@ def main() -> None:
 
             print("\n通常のHSV値:")
             print("  H     S     V  ")
-            print(f"{h_min:3.1f0} {s_min:3.1f} {v_min:3.1f}")
+            print(f"{h_min:3.1f} {s_min:3.1f} {v_min:3.1f}")
             print(f"{h_max:3.1f} {s_max:3.1f} {v_max:3.1f}")
 
         else:
             print("無効な選択です。1または2を選択してください。")
 
-    except ValueError:
+    except ValueError as e:
         print("入力形式が正しくありません。3つの数値を空白で区切って入力してください。")
+        raise ValueError from e
 
 
 if __name__ == "__main__":
