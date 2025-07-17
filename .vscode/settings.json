@@ -13,5 +13,7 @@
     "python.analysis.autoImportCompletions": true,
     "python.analysis.typeCheckingMode": "standard",
     "basedpyright.analysis.autoImportCompletions": true,
-    "basedpyright.analysis.typeCheckingMode": "standard"
+    "basedpyright.analysis.typeCheckingMode": "standard",
+    "cursorpyright.analysis.autoImportCompletions": true,
+    "cursorpyright.analysis.typeCheckingMode": "standard"
 }
