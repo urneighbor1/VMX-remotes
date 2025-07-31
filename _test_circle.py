@@ -3,7 +3,8 @@
 import typing
 
 import cv2
-from cv2.typing import Point2f
+import cv2.typing as cv2t
+import numpy as np
 
 from color_square_detector import ColorDetector, ColorImage, ColorSquareDetector
 from config import ColorConfig, load_preferences
@@ -13,12 +14,30 @@ from robot import HEIGHT, WIDTH
 IMG_SRC = "./saved_images/img.jpg"
 
 
+# 円のセンターマークを描画
+def draw_center_mark(image: ColorImage, point: cv2t.Point2f, radius: float) -> None:
+    npt = (int(point[0]), int(point[1]))
+    r = int(radius)
+    cv2.circle(image, npt, r, (255, 0, 0), 2)
+
+    cv2.drawMarker(image, npt, (0, 0, 0), markerType=cv2.MARKER_CROSS, markerSize=10, thickness=1)
+
+
 def get_circle(
     frame: ColorImage,
     color_detector: ColorDetector,
     config: ColorConfig,
-) -> list[tuple[Point2f, float]]:
-    """See: https://blog.ashija.net/2017/11/28/post-2549/"""
+) -> list[tuple[cv2t.Point2f, float]]:
+    """
+    円検出をする
+
+    See:
+    https://blog.ashija.net/2017/11/28/post-2549/
+    https://emotionexplorer.blog.fc2.com/blog-entry-228.html
+    """
+    MIN_RADIUS = 10  # noqa: N806
+    MAX_RADIUS = 23  # noqa: N806
+
     # # HSVによる画像情報に変換
     # hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -30,14 +49,25 @@ def get_circle(
         config.color_ranges["Yellow"],
     )
 
-    # 輪郭抽出
-    contours, _hierarchy = cv2.findContours(color, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    print(f"{len(contours)} contours.")
-
     cv2.imshow("blur", blur)
     cv2.imshow("masked", color)
 
-    return [cv2.minEnclosingCircle(contour) for contour in contours]
+    # ハフ変換
+    circles: cv2t.MatLike | None = cv2.HoughCircles(
+        color,
+        cv2.HOUGH_GRADIENT,
+        dp=1,
+        minDist=color.shape[0] / 3,
+        # param1, param2はよくわからない
+        param1=40,
+        param2=7,
+        minRadius=MIN_RADIUS,
+        maxRadius=MAX_RADIUS,
+    )
+    if circles:
+        circles = np.around(circles).astype(np.uint32)
+        return [((center_x, center_y), radius) for (center_x, center_y, radius) in circles[0, :]]
+    return []
 
 
 def main() -> None:
@@ -50,8 +80,7 @@ def main() -> None:
     circles = get_circle(img_src, detector.color_detector, detector.config)
     for center, radius in circles:
         # 見つかった円の上に青い円を描画
-        center_int = (round(center[0]), round(center[1]))
-        cv2.circle(img_dst, center_int, int(radius), (255, 0, 0), 2)
+        draw_center_mark(img_dst, center, radius)
         print(center, radius)
 
     cv2.imshow("result(YELLOW)", img_dst)
