@@ -5,8 +5,8 @@ import cv2
 import cv2.typing as cv2t
 import numpy as np
 
-from color_range import ColorRange
-from config import ColorConfig, ColorName
+from .color_range import ColorRange
+from .config import ColorConfig, ColorName
 
 type ColorImage = np.ndarray[tuple[int, int, Literal[3]], np.dtype[np.uint8]]
 type ImageMask = np.ndarray[tuple[int, int], np.dtype[np.uint8]]

@@ -1,9 +1,10 @@
 """ローカルのテスト用スクリプト"""
+
 import cv2
 
-from color_square_detector import ColorImage, ColorSquareDetector
-from config import load_preferences
-from robot import HEIGHT, SAVED_IMAGES_DIR, WIDTH, display_results
+from vmx_remotes.color_square_detector import ColorImage, ColorSquareDetector
+from vmx_remotes.config import load_preferences
+from vmx_remotes.robot_app import HEIGHT, SAVED_IMAGES_DIR, WIDTH, display_results
 
 
 def load_images() -> list[ColorImage]:

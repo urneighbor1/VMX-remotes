@@ -6,9 +6,9 @@ import cv2
 import cv2.typing as cv2t
 import numpy as np
 
-from color_square_detector import ColorDetector, ColorImage, ColorSquareDetector
-from config import ColorConfig, load_preferences
-from robot import HEIGHT, WIDTH
+from vmx_remotes.color_square_detector import ColorDetector, ColorImage, ColorSquareDetector
+from vmx_remotes.config import ColorConfig, load_preferences
+from vmx_remotes.robot_app import HEIGHT, WIDTH
 
 # 使用する画像ファイルのパス
 IMG_SRC = "./saved_images/img.jpg"

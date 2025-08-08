@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from color_range import ColorRange
+from .color_range import ColorRange
 
 PREFERENCES_FILE = Path(__file__).parent / "color_squares_preferences.json"
 "設定ファイルのパス"

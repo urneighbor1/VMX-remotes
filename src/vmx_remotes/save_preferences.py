@@ -3,8 +3,8 @@
 import json
 import time
 
-from config import PREFERENCES_FILE, ColorConfig
-from init import NetworkTables, get_server_ip, init_network_tables
+from .config import PREFERENCES_FILE, ColorConfig
+from .init import NetworkTables, get_server_ip, init_network_tables
 
 
 def save_preferences() -> None:

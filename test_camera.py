@@ -1,11 +1,12 @@
 """ローカルのテスト用スクリプト"""
+
 from typing import cast
 
 import cv2
 
-from color_square_detector import ColorImage, ColorSquareDetector
-from config import load_preferences
-from robot import HEIGHT, WIDTH, display_results, save_image
+from vmx_remotes.color_square_detector import ColorImage, ColorSquareDetector
+from vmx_remotes.config import load_preferences
+from vmx_remotes.robot_app import HEIGHT, WIDTH, display_results, save_image
 
 
 def main() -> None:
